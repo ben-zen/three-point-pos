@@ -8,6 +8,10 @@
 #include <vector>
 
 #include <fmt/format.h>
+#include <ftxui/component/component.hpp>
+#include <ftxui/component/screen_interactive.hpp>
+#include <ftxui/dom/elements.hpp>
+#include <ftxui/screen/screen.hpp>
 
 class menu_item {
     const std::vector<menu_item &> get_all();
@@ -125,6 +129,8 @@ order take_order() {
     return slip;
 }
 
+
+
 int main(int argc, char **argv) {
     std::cout << "Welcome to the 3 Point Café POS" << std::endl
                 << "To place an order, enter one item number at a time, followed by a return each time." << std::endl
@@ -137,6 +143,31 @@ int main(int argc, char **argv) {
     }
 
     std::cout << std::endl;
+
+    auto main_menu_buttons = ftxui::Container::Vertical({
+        ftxui::Button("Start an order", [](){}, ftxui::ButtonOption::Border()),
+        ftxui::Button("Exit", [](){ std::exit(0); }, ftxui::ButtonOption::Border())
+    });
+
+    ftxui::Element document =
+        ftxui::vbox({
+            ftxui::text("The 3-Point Café") | ftxui::flex,
+            main_menu_buttons->Render()
+        });
+
+    auto screen = ftxui::ScreenInteractive::FitComponent();
+
+    auto component = ftxui::Renderer(main_menu_buttons, [&] {
+        return ftxui::vbox({
+            ftxui::vbox({
+                ftxui::text("The 3-Point Café"),
+                ftxui::separator()
+            }),
+            main_menu_buttons->Render()
+        });
+    });
+
+    screen.Loop(component);
 
     order slip = take_order();
 
