@@ -13,6 +13,8 @@
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/screen.hpp>
 
+#include "external/args.hxx"
+
 class menu_item {
     const std::vector<menu_item &> get_all();
 };
@@ -129,9 +131,7 @@ order take_order() {
     return slip;
 }
 
-
-
-int main(int argc, char **argv) {
+int order_narrative() {
     std::cout << "Welcome to the 3 Point Café POS" << std::endl
                 << "To place an order, enter one item number at a time, followed by a return each time." << std::endl
                 << "To complete your order, press return again." << std::endl
@@ -144,18 +144,32 @@ int main(int argc, char **argv) {
 
     std::cout << std::endl;
 
+    order slip = take_order();
+
+    for (auto &line : slip.items) {
+        fmt::println("{}:\t{}", line.first, line.second);
+    }
+
+    // Send to the order printer, get the order number.
+
+    std::cout << "We got your order, but don't have a numbering system yet." << std::endl;
+
+    return 0;
+}
+
+int order_interactive() {
+    auto screen = ftxui::ScreenInteractive::Fullscreen();
+
     auto main_menu_buttons = ftxui::Container::Vertical({
         ftxui::Button("Start an order", [](){}, ftxui::ButtonOption::Border()),
-        ftxui::Button("Exit", [](){ std::exit(0); }, ftxui::ButtonOption::Border())
+        ftxui::Button("Exit", [&screen](){ screen.Exit(); }, ftxui::ButtonOption::Border())
     });
 
     ftxui::Element document =
         ftxui::vbox({
             ftxui::text("The 3-Point Café") | ftxui::flex,
             main_menu_buttons->Render()
-        });
-
-    auto screen = ftxui::ScreenInteractive::FitComponent();
+    });
 
     auto component = ftxui::Renderer(main_menu_buttons, [&] {
         return ftxui::vbox({
@@ -169,15 +183,49 @@ int main(int argc, char **argv) {
 
     screen.Loop(component);
 
-    order slip = take_order();
+    return 0;
+}
 
-    for (auto &line : slip.items) {
-        fmt::println("{}:\t{}", line.first, line.second);
+int main(int argc, char **argv) {
+    args::ArgumentParser parser{"You, too can run the till at the Three Point Café; put in an order, and join the queue!"};
+    args::HelpFlag help{parser, "help", "Display this menu", {'h', "help"}};
+    args::Group commands{parser, "commands"};
+    args::Command interactive{commands, "interactive", "Run the order kiosk TUI"};
+    args::Command console{commands, "console", "Run a single order via a textual interface."};
+
+    try
+    {
+        parser.ParseCLI(argc, argv);
+
+    }
+    catch(args::Help&)
+    {
+        std::cout << parser << std::endl;
+        return 0;
+    }
+    catch (args::ParseError &e)
+    {
+        std::cerr << e.what() << std::endl;
+        std::cerr << parser;
+        return 1;
+    }
+    catch (args::ValidationError &e)
+    {
+        std::cerr << e.what() << std::endl;
+        std::cerr << parser;
+        return 2;
     }
 
-    // Send to the order printer, get the order number.
+    if (interactive)
+    {
+        return order_interactive();
+    }
+    else if (console)
+    {
+        return order_narrative();
+    }
 
-    std::cout << "We got your order, but don't have a numbering system yet." << std::endl;
+    std::cout << "hit the end of the options, and the sidewalk..." << std::endl;
 
     return 0;
 }
