@@ -211,6 +211,19 @@ int main(int argc, char **argv) {
     }
     catch (args::ValidationError &e)
     {
+        // Validate that we're not the shell itself.
+        // If argv[0] == $SHELL and argc == 1, we're
+        // running as the shell.
+        
+        if (argc == 1) {
+            if (const char *shell_env = std::getenv("SHELL")) {
+                if (strcmp(argv[0], shell_env) == 0) {
+                    std::cout << "Figure out how to make this work." << std::endl;
+                    return 3;
+                }
+            }
+        }
+
         std::cerr << e.what() << std::endl;
         std::cerr << parser;
         return 2;
