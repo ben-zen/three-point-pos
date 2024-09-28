@@ -160,27 +160,26 @@ int order_narrative() {
 int order_interactive() {
     auto screen = ftxui::ScreenInteractive::Fullscreen();
 
+    ftxui::Element current_page{};
+
     auto main_menu_buttons = ftxui::Container::Vertical({
         ftxui::Button("Start an order", [](){}, ftxui::ButtonOption::Border()),
         ftxui::Button("Exit", [&screen](){ screen.Exit(); }, ftxui::ButtonOption::Border())
     });
 
-    ftxui::Element document =
+    ftxui::Element main_page =
         ftxui::vbox({
-            ftxui::text("The 3-Point Café") | ftxui::flex,
+            ftxui::text("The 3-Point Café") | ftxui::hcenter | ftxui::bold,
             main_menu_buttons->Render()
     });
+
+    
 
     auto component = ftxui::Renderer(main_menu_buttons, [&] {
-        return ftxui::vbox({
-            ftxui::vbox({
-                ftxui::text("The 3-Point Café"),
-                ftxui::separator()
-            }),
-            main_menu_buttons->Render()
-        });
+        return current_page;
     });
 
+    current_page = main_page;
     screen.Loop(component);
 
     return 0;
@@ -215,18 +214,14 @@ int main(int argc, char **argv) {
         // If argv[0] == $SHELL and argc == 1, we're
         // running as the shell.
         
-        if (argc == 1) {
-            if (const char *shell_env = std::getenv("SHELL")) {
-                if (strcmp(argv[0], shell_env) == 0) {
-                    std::cout << "Figure out how to make this work." << std::endl;
-                    return 3;
-                }
-            }
+        const char *shell_env = std::getenv("SHELL");
+        if (argc != 1 || shell_env == nullptr || (strcmp(argv[0], shell_env) != 0)) {
+            std::cerr << e.what() << std::endl;
+            std::cerr << parser;
+            return 2;
         }
 
-        std::cerr << e.what() << std::endl;
-        std::cerr << parser;
-        return 2;
+        interactive.Match();
     }
 
     if (interactive)
